@@ -4,7 +4,8 @@
 파일명: {logNo}.json
 
 사용법:
-    python crawling.py urls.txt -o .
+    python db/crawler/crawl_posts.py                       # db/urls.txt → db/raw/
+    python db/crawler/crawl_posts.py my_urls.txt -o db/raw
     (urls.txt: 한 줄에 블로그 글 URL 하나)
 """
 
@@ -17,6 +18,8 @@ from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+
+DB_DIR = Path(__file__).resolve().parent.parent   # db/
 
 KST = timezone(timedelta(hours=9))
 HEADERS = {
@@ -118,8 +121,8 @@ def crawl(url: str, session: requests.Session) -> tuple[str, dict]:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("url_file", help="URL 목록 파일 (한 줄에 하나)")
-    ap.add_argument("-o", "--out", default="output", help="저장 폴더")
+    ap.add_argument("url_file", nargs="?", default=str(DB_DIR / "urls.txt"), help="URL 목록 파일 (기본 db/urls.txt)")
+    ap.add_argument("-o", "--out", default=str(DB_DIR / "raw"), help="저장 폴더 (기본 db/raw)")
     ap.add_argument("--delay", type=float, default=1.5, help="요청 간격(초)")
     ap.add_argument("--skip-existing", action="store_true", help="이미 저장된 글 건너뛰기")
     args = ap.parse_args()

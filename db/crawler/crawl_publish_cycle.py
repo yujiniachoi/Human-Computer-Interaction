@@ -4,9 +4,9 @@
 아이디, 발행 날짜/시간, 제목을 모아 JSON 하나로 저장한다.
 
 사용법:
-    python crawl_publish_history.py                       # 같은 폴더의 blog_ids.txt 사용
-    python crawl_publish_history.py mateA mateB -n 30
-    python crawl_publish_history.py --id-file blog_ids.txt -o publish_history.json
+    python db/crawler/crawl_publish_cycle.py              # db/blog_ids.txt 사용 → db/processed/publish_history.json
+    python db/crawler/crawl_publish_cycle.py mateA mateB -n 30
+    python db/crawler/crawl_publish_cycle.py --id-file db/blog_ids.txt -o publish_history.json
     (blog_ids.txt: 한 줄에 블로그 ID 하나. 블로그 주소를 통째로 넣어도 됨)
 
 동작 방식 (블로거 1명당):
@@ -41,6 +41,8 @@ from urllib.parse import unquote_plus
 
 import requests
 from bs4 import BeautifulSoup
+
+DB_DIR = Path(__file__).resolve().parent.parent   # db/
 
 KST = timezone(timedelta(hours=9))
 HEADERS = {
@@ -217,7 +219,7 @@ def read_ids(args, parser) -> list[str]:
     if args.id_file:
         ids += Path(args.id_file).read_text(encoding="utf-8").split()
     if not ids:
-        default_file = Path(__file__).with_name("blog_ids.txt")
+        default_file = DB_DIR / "blog_ids.txt"
         if default_file.exists():
             ids = default_file.read_text(encoding="utf-8").split()
             print(f"{default_file.name}에서 블로그 ID {len(ids)}개를 읽었습니다.")
@@ -235,12 +237,13 @@ def main():
     ap.add_argument("blog_ids", nargs="*", help="블로그 ID (여러 개 가능)")
     ap.add_argument("--id-file", help="블로그 ID 목록 파일 (한 줄에 하나)")
     ap.add_argument("-n", type=int, default=30, help="블로거당 글 수 (기본 30)")
-    ap.add_argument("-o", "--out", default="publish_history.json", help="저장할 JSON 파일")
+    ap.add_argument("-o", "--out", default=str(DB_DIR / "processed" / "publish_history.json"), help="저장할 JSON 파일 (기본 db/processed/publish_history.json)")
     ap.add_argument("--delay", type=float, default=1.5, help="요청 간격(초)")
     args = ap.parse_args()
 
     ids = read_ids(args, ap)
     out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
     result = {"crawled_at": datetime.now(KST).isoformat(), "n_per_blogger": args.n,
               "bloggers": {}, "failed": []}
 

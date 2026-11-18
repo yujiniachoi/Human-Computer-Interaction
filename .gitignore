@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 비밀 값
+.env
+
+# 데이터 (원본 크롤링 결과·생성물)
+db/urls.txt
+db/raw/*
+!db/raw/.gitkeep
+rag/index/*
+!rag/index/.gitkeep
+
+# OS / Node
+.DS_Store
+node_modules/

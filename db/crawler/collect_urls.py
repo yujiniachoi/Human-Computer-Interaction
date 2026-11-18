@@ -1,11 +1,12 @@
 """
 네이버 블로그 최신 글 주소 수집기
-블로그 ID를 넣으면 최신 글 N개의 주소를 urls.txt에 저장한다.
-저장된 urls.txt는 crawling.py에 그대로 넣으면 된다.
+블로그 ID를 넣으면 최신 글 N개의 주소를 db/urls.txt에 저장한다.
+저장된 urls.txt는 crawl_posts.py에 그대로 넣으면 된다.
 
 사용법:
-    python get_latest_urls.py 블로그 아이디 -n 20 -o urls.txt #크롤링하려는 블로그 아이디 넣고 실행
-    python naver_blog_crawler.py urls.txt -o output #본인 크롤링 코드.py 넣고 터미널에서 실행
+    python db/crawler/collect_urls.py 블로그아이디 -n 20          # → db/urls.txt
+    python db/crawler/collect_urls.py --id-file db/blog_ids.txt -n 20
+    python db/crawler/crawl_posts.py                              # db/urls.txt → db/raw/
     (blog_ids.txt: 한 줄에 블로그 ID 하나)
 
 동작 방식:
@@ -21,6 +22,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import requests
+
+DB_DIR = Path(__file__).resolve().parent.parent   # db/
 
 HEADERS = {
     "User-Agent": (
@@ -97,7 +100,7 @@ def main():
     ap.add_argument("blog_ids", nargs="*", help="블로그 ID (여러 개 가능)")
     ap.add_argument("--id-file", help="블로그 ID 목록 파일 (한 줄에 하나)")
     ap.add_argument("-n", type=int, default=20, help="블로그당 가져올 글 수 (기본 20)")
-    ap.add_argument("-o", "--out", default="urls.txt", help="저장할 파일 (기본 urls.txt)")
+    ap.add_argument("-o", "--out", default=str(DB_DIR / "urls.txt"), help="저장할 파일 (기본 db/urls.txt)")
     ap.add_argument("--append", action="store_true", help="기존 파일 뒤에 이어 쓰기 (중복 주소는 제외)")
     args = ap.parse_args()
 
@@ -108,6 +111,7 @@ def main():
         ap.error("블로그 ID를 하나 이상 넣어 주세요.")
 
     out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
     existing = []
     if args.append and out.exists():
         existing = [l.strip() for l in out.read_text(encoding="utf-8").splitlines() if l.strip()]

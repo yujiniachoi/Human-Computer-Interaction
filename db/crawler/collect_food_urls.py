@@ -1,13 +1,13 @@
 """
 네이버 블로그 최신 '푸드 후기' 글 주소 수집기
 블로그 ID를 넣으면 최신 글을 차례로 훑어서
-맛집 / 카페 / 디저트의 리뷰·방문 후기 글만 N개 골라 urls.txt에 저장한다.
-저장된 urls.txt는 crawling.py에 그대로 넣으면 된다.
+맛집 / 카페 / 디저트의 리뷰·방문 후기 글만 N개 골라 db/urls.txt에 저장한다.
+저장된 urls.txt는 crawl_posts.py에 그대로 넣으면 된다.
 
 사용법:
-    python get_latest_urls.py 블로그아이디 -n 20 -o urls.txt
-    python get_latest_urls.py --id-file blog_ids.txt -n 20 -o urls.txt   (blog_ids.txt: 한 줄에 ID 하나)
-    python crawling.py urls.txt -o output
+    python db/crawler/collect_food_urls.py 블로그아이디 -n 20                      # → db/urls.txt
+    python db/crawler/collect_food_urls.py --id-file db/blog_ids.txt -n 20   (blog_ids.txt: 한 줄에 ID 하나)
+    python db/crawler/crawl_posts.py                                          # db/urls.txt → db/raw/
 
 옵션:
     --max-scan 100   블로그당 최신글 몇 개까지 훑을지 (조건에 맞는 글이 적으면 여기서 멈춤)
@@ -34,6 +34,8 @@ from urllib.parse import unquote_plus
 
 import requests
 from bs4 import BeautifulSoup
+
+DB_DIR = Path(__file__).resolve().parent.parent   # db/
 
 HEADERS = {
     "User-Agent": (
@@ -244,7 +246,7 @@ def main():
     ap.add_argument("--id-file", help="블로그 ID 목록 파일 (한 줄에 하나)")
     ap.add_argument("-n", type=int, default=20, help="블로그당 가져올 푸드 후기 글 수 (기본 20)")
     ap.add_argument("--max-scan", type=int, default=100, help="블로그당 최대 몇 개 최신글까지 훑을지 (기본 100)")
-    ap.add_argument("-o", "--out", default="urls.txt", help="저장할 파일 (기본 urls.txt)")
+    ap.add_argument("-o", "--out", default=str(DB_DIR / "urls.txt"), help="저장할 파일 (기본 db/urls.txt)")
     ap.add_argument("--append", action="store_true", help="기존 파일 뒤에 이어 쓰기 (중복 주소는 제외)")
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--title-only", action="store_true", help="본문을 열지 않고 제목/카테고리로만 판별")
@@ -259,6 +261,7 @@ def main():
         ap.error("블로그 ID를 하나 이상 넣어 주세요.")
 
     out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
     existing = []
     if args.append and out.exists():
         existing = [l.strip() for l in out.read_text(encoding="utf-8").splitlines() if l.strip()]

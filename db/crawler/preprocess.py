@@ -1,12 +1,14 @@
 import json
 import re
 import glob
+from pathlib import Path
 import pandas as pd
 
 # ===== 설정 =====
-INPUT_GLOB = "data/*.json"      # 크롤링한 JSON 파일들이 있는 폴더
-OUTPUT_JSON = "clean.json"      # 전처리 결과 (웹사이트용)
-OUTPUT_CSV = "clean.csv"        # 전처리 결과 (엑셀 확인용)
+DB_DIR = Path(__file__).resolve().parent.parent              # db/
+INPUT_GLOB = str(DB_DIR / "raw" / "*.json")                 # 크롤링한 JSON 파일들이 있는 폴더
+OUTPUT_JSON = DB_DIR / "processed" / "clean.json"           # 전처리 결과 (RAG 입력)
+OUTPUT_CSV = DB_DIR / "processed" / "clean.csv"             # 전처리 결과 (엑셀 확인용)
 MIN_BODY_LEN = 100              # 이보다 짧은 글은 제외
 
 
@@ -105,6 +107,7 @@ def main():
     df = df.reset_index(drop=True)
 
     # 저장
+    OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     df.to_json(OUTPUT_JSON, orient="records", force_ascii=False, indent=2, date_format="iso")
     df.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
 
